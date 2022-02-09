@@ -31,6 +31,7 @@ public class JDBCConnect {
         Logger logger = Logger.getLogger(JDBCConnect.class.getName());
 
         Class.forName("com.mysql.cj.jdbc.Driver");
+        logger.info("Valid mysql driver library found.");
 
         String dbUrl = null;
         String userName = null;
@@ -41,6 +42,7 @@ public class JDBCConnect {
         ResultSet resultSet = null;
 
         try (InputStream input = new FileInputStream("application.properties")) {
+            logger.info("Application.properties file found.");
             Properties properties = new Properties();
             properties.load(input);
             dbUrl = properties.getProperty("jdbc.dburl");
@@ -49,10 +51,13 @@ public class JDBCConnect {
             inputJsonFile = properties.getProperty("output.json.filePath");
             inputJsonFileExtended = properties.getProperty("output.json.filePathEx");
             query = "SELECT * FROM Business.CustomerInfo ci WHERE ci.PurchaseDate = CURRENT_DATE() AND ci.Location = 'Asia'";
+            logger.info("All required properties loaded.");
         }
 
         try (Connection connection = DriverManager.getConnection(dbUrl, userName, password);
                 Statement stmt = connection.createStatement()) {
+            
+            logger.info("Connection estalished with database successfully.");
 
             if (stmt.execute(query)) {
                 resultSet = stmt.getResultSet();
@@ -73,6 +78,8 @@ public class JDBCConnect {
                         new File(inputJsonFile),
                         customersInfo);
 
+                logger.info("Response stored in JSON File at location: " + inputJsonFile);
+
                 JSONObject jsonObject = new JSONObject();
                 JSONArray jsonArray = new JSONArray();
                 Gson gson = new Gson();
@@ -86,13 +93,11 @@ public class JDBCConnect {
                 String unescapedString = StringEscapeUtils.unescapeJson(jsonObject.toJSONString())
                         .replace("\"{", "{").replace("}\"", "}");
 
-                logger.info(unescapedString);
-
                 try (BufferedWriter writer = new BufferedWriter(new FileWriter(inputJsonFileExtended))) {
                     writer.write(unescapedString);
-
+                    logger.info("New updated json file with data element is created at location: " + inputJsonFileExtended);
                 } catch (Exception e) {
-                    logger.severe("Exception occured while writing json file: " + e.getMessage());
+                    logger.severe("Exception occured while writing json file at" + inputJsonFileExtended + ". Error message: "  + e.getMessage());
                 }
 
             }
